@@ -1,39 +1,38 @@
 /**
- * Lime monogram logo — a stylized "P" (Pravda) inside a rounded square.
- * `size` controls the box in px.
+ * Lime monogram — twin chevrons forming an "A/V" mark, echoing the Figma
+ * Lexi/Pravda brand. `size` controls the rounded box in px.
  */
-export default function Logo({ size = 88, glow = true }) {
+export default function Logo({ size = 88, glow = true, rounded = true }) {
   return (
     <div
-      className={`grid place-items-center rounded-[28%] bg-lime ${glow ? 'shadow-glow' : ''}`}
+      className={`grid place-items-center bg-lime ${glow ? 'shadow-glow' : ''} ${
+        rounded ? 'rounded-[28%]' : 'rounded-2xl'
+      }`}
       style={{ width: size, height: size }}
-      aria-label="Pravda"
+      aria-label="Pravda AI"
       role="img"
     >
       <svg
         width={size * 0.56}
         height={size * 0.56}
-        viewBox="0 0 24 24"
+        viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Monogram "P" drawn with thick strokes on the ink background color */}
+        {/* Two interlocking chevrons on the ink background color */}
         <path
-          d="M6 3.5h7.5a5 5 0 0 1 0 10H9.5V20.5"
+          d="M4 25 L13 7 L16 13"
           stroke="#0D0D0D"
-          strokeWidth="3.4"
+          strokeWidth="3.6"
           strokeLinecap="round"
           strokeLinejoin="round"
-          fill="none"
         />
-        {/* Check-mark accent — the "verified / truth" cue */}
         <path
-          d="M15.2 15.8l2 2 3.3-3.6"
+          d="M28 25 L19 7 L11 25"
           stroke="#0D0D0D"
-          strokeWidth="3"
+          strokeWidth="3.6"
           strokeLinecap="round"
           strokeLinejoin="round"
-          fill="none"
         />
       </svg>
     </div>

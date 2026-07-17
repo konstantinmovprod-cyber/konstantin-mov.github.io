@@ -1,127 +1,88 @@
-// Mock data. Replace with real backend responses later.
+// Mock data for the GPT-chat Mini App. Replace with a real backend later.
 
-// Status levels shared across the app.
-export const STATUS = {
-  danger: {
-    key: 'danger',
-    label: 'ОПАСНО',
-    emoji: '🟥',
-    color: '#FF3B3B',
-  },
-  warn: {
-    key: 'warn',
-    label: 'СОМНИТЕЛЬНО',
-    emoji: '🟨',
-    color: '#F8D82A',
-  },
-  safe: {
-    key: 'safe',
-    label: 'БЕЗОПАСНО',
-    emoji: '🟩',
-    color: '#C4F82A',
-  },
+// Time-of-day greeting (matches the Figma "Доброе утро, Никита!" header).
+export function greeting(date = new Date()) {
+  const h = date.getHours()
+  if (h >= 5 && h < 12) return 'Доброе утро'
+  if (h >= 12 && h < 18) return 'Добрый день'
+  if (h >= 18 && h < 23) return 'Добрый вечер'
+  return 'Доброй ночи'
 }
 
-// Recently checked documents shown on the Home screen.
-export const recentDocuments = [
+// Suggested prompts shown on an empty chat.
+export const suggestions = [
+  'Как расторгнуть договор аренды без штрафа?',
+  'Что делать, если не возвращают деньги за товар?',
+  'Проверь, законно ли удержание из зарплаты',
+  'Составь претензию продавцу',
+]
+
+// Recent conversations for the Home screen.
+export const threads = [
   {
-    id: 'doc-1',
-    title: 'Договор аренды квартиры',
-    date: '14 июля',
-    pages: 8,
-    status: 'danger',
-    summary: '3 опасных пункта · 2 сомнительных',
+    id: 't1',
+    title: 'Расторжение договора аренды',
+    preview: 'По общему правилу вы вправе расторгнуть договор, уведомив...',
+    time: '14:32',
+    unread: true,
   },
   {
-    id: 'doc-2',
-    title: 'Трудовой договор — ООО «Вектор»',
-    date: '9 июля',
-    pages: 12,
-    status: 'warn',
-    summary: '4 сомнительных пункта',
+    id: 't2',
+    title: 'Возврат денег за товар',
+    preview: 'Продавец обязан вернуть деньги в течение 10 дней с момента...',
+    time: 'Вчера',
+    unread: false,
   },
   {
-    id: 'doc-3',
-    title: 'Договор оказания услуг',
-    date: '2 июля',
-    pages: 5,
-    status: 'safe',
-    summary: 'Существенных рисков не найдено',
+    id: 't3',
+    title: 'Удержание из зарплаты',
+    preview: 'Работодатель может удерживать не более 20% в общем случае...',
+    time: 'Вчера',
+    unread: false,
+  },
+  {
+    id: 't4',
+    title: 'Претензия застройщику',
+    preview: 'Претензия составляется в свободной форме, но должна содержать...',
+    time: '12 июл',
+    unread: false,
   },
 ]
 
-// Clause-by-clause analysis used on the Result screen.
-export const contractAnalysis = {
-  documentTitle: 'Договор аренды квартиры',
-  score: { danger: 3, warn: 2, safe: 6 },
-  clauses: [
-    {
-      id: 'c1',
-      section: 'п. 4.2',
-      title: 'Односторонний рост арендной платы',
-      status: 'danger',
-      note: 'Арендодатель может повышать плату в любой момент без ограничений. Требуйте потолок и уведомление за 30 дней.',
-    },
-    {
-      id: 'c2',
-      section: 'п. 6.1',
-      title: 'Удержание всего депозита',
-      status: 'danger',
-      note: 'Депозит удерживается полностью при любом досрочном выезде. Это несоразмерная неустойка.',
-    },
-    {
-      id: 'c3',
-      section: 'п. 8.4',
-      title: 'Запрет на регистрацию',
-      status: 'danger',
-      note: 'Пункт ограничивает ваше право на временную регистрацию по месту пребывания.',
-    },
-    {
-      id: 'c4',
-      section: 'п. 3.3',
-      title: 'Штраф за просрочку 1% в день',
-      status: 'warn',
-      note: 'Неустойка выше рыночной. Можно оспорить как несоразмерную (ст. 333 ГК РФ).',
-    },
-    {
-      id: 'c5',
-      section: 'п. 9.2',
-      title: 'Подсудность по месту арендодателя',
-      status: 'warn',
-      note: 'Споры рассматриваются в удобном для собственника суде. Уточните формулировку.',
-    },
-    {
-      id: 'c6',
-      section: 'п. 1.1',
-      title: 'Предмет договора',
-      status: 'safe',
-      note: 'Объект и адрес описаны корректно и однозначно.',
-    },
-    {
-      id: 'c7',
-      section: 'п. 2.1',
-      title: 'Срок аренды',
-      status: 'safe',
-      note: 'Срок и порядок продления указаны без подводных камней.',
-    },
-    {
-      id: 'c8',
-      section: 'п. 5.1',
-      title: 'Порядок оплаты',
-      status: 'safe',
-      note: 'Сроки и способ оплаты прозрачны, реквизиты указаны.',
-    },
-  ],
+// Opening assistant message for a fresh conversation.
+export const welcomeMessage = {
+  role: 'assistant',
+  text: 'Привет! Я — Pravda AI, ваш юридический ассистент. Опишите ситуацию или задайте вопрос, и я помогу разобраться. Это информация для справки, а не официальная консультация.',
 }
 
-// Premium plans for the Premium screen.
+// Very small canned responder so the chat feels alive without a backend.
+// Swap this out for a real API call later.
+export function mockReply(text) {
+  const t = (text || '').toLowerCase()
+
+  if (t.includes('аренд') || t.includes('квартир')) {
+    return 'Чтобы расторгнуть договор аренды, сначала загляните в раздел «Порядок расторжения». Обычно нужно письменно уведомить арендодателя за 30 дней. Если предусмотрен штраф — его можно оспорить как несоразмерный (ст. 333 ГК РФ). Хотите, помогу составить уведомление?'
+  }
+  if (t.includes('возврат') || t.includes('деньг') || t.includes('товар')) {
+    return 'При возврате товара продавец обязан вернуть деньги в течение 10 дней (ст. 22 Закона «О защите прав потребителей»). Если отказывают — направьте письменную претензию, а затем можно обращаться в Роспотребнадзор или суд. Составить претензию?'
+  }
+  if (t.includes('зарплат') || t.includes('удержан') || t.includes('работодател')) {
+    return 'Удержания из зарплаты ограничены: по общему правилу — не более 20%, в отдельных случаях — до 50%. Работодатель обязан обосновать удержание. Если оно незаконно, вы вправе обратиться в трудовую инспекцию. Опишите детали — разберём ваш случай.'
+  }
+  if (t.includes('претенз') || t.includes('состав')) {
+    return 'Претензия должна содержать: ваши данные и данные адресата, суть требования, ссылки на нормы права, срок для ответа (обычно 10 дней) и дату. Пришлите детали — подготовлю черновик, который останется только подставить в шаблон.'
+  }
+  return 'Понял вопрос. В реальной версии здесь будет развёрнутый ответ от AI-юриста с ссылками на нормы права. Сейчас это демо-режим — уточните ситуацию, и я подскажу общее направление.'
+}
+
+// Premium plans (kept from the original spec, restyled to match Figma).
 export const plans = [
   {
     id: 'monthly',
     title: 'Месяц',
-    price: '350₽',
+    price: '395₽',
     period: '/мес',
-    note: 'Безлимитные проверки договоров',
+    note: 'Безлимитные вопросы AI-юристу',
     highlight: false,
   },
   {
@@ -133,4 +94,11 @@ export const plans = [
     badge: '−20%',
     highlight: true,
   },
+]
+
+export const premiumPerks = [
+  'Безлимитные юридические запросы',
+  'Режим «Глубокий разбор»',
+  'История и папки для диалогов',
+  'Приоритетные ответы без очереди',
 ]
