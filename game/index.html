@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0D0D0D" />
+<title>PRAVDA — Охотник за ловушками</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0D0D0D; --card:#1A1A1A; --lime:#C4F82A; --muted:#7A7A7A;
+    --danger:#FF3B3B; --warn:#F8D82A; --safe:#C4F82A; --white:#fff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--ink); color:var(--white);
+    font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden; user-select:none;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+  }
+  .app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative;}
+  .display{text-transform:uppercase;font-weight:900;line-height:.95;letter-spacing:-.01em;}
+
+  /* ---------- TOP HUD ---------- */
+  .hud{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:10px;}
+  .hud .brand{display:flex;align-items:center;gap:8px;font-weight:900;text-transform:uppercase;font-size:14px;letter-spacing:.02em;}
+  .logo{width:26px;height:26px;border-radius:8px;background:var(--lime);display:grid;place-items:center;color:var(--ink);font-weight:900;font-size:15px;}
+  .stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1;}
+  .stat .l{font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;font-weight:700;}
+  .stat .v{font-size:20px;font-weight:900;color:var(--lime);margin-top:3px;}
+  .lives{display:flex;gap:5px;font-size:16px;}
+  .lives .dead{opacity:.2;filter:grayscale(1);}
+
+  /* combo pill */
+  .combo{position:absolute;top:56px;left:50%;transform:translateX(-50%);
+    background:rgba(196,248,42,.14);color:var(--lime);font-weight:900;font-size:12px;
+    text-transform:uppercase;letter-spacing:.05em;padding:5px 12px;border-radius:999px;
+    opacity:0;transition:opacity .2s;pointer-events:none;z-index:5;}
+  .combo.show{opacity:1;}
+
+  /* ---------- CARD STAGE ---------- */
+  .stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:12px 18px;}
+  .card{
+    position:absolute;width:calc(100% - 36px);max-width:400px;
+    background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:26px;
+    padding:26px 22px 22px;box-shadow:0 20px 50px rgba(0,0,0,.5);
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .card .tag{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  .card .clause{font-size:20px;font-weight:800;line-height:1.28;min-height:112px;}
+  .card .rail{position:absolute;left:0;top:0;height:100%;width:6px;border-radius:26px 0 0 26px;background:var(--muted);opacity:.5;}
+  .timerbar{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .timerbar > span{display:block;height:100%;width:100%;background:var(--lime);transform-origin:left;}
+
+  /* verdict overlays that flash on the card */
+  .verdict{position:absolute;top:18px;right:18px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;
+    padding:6px 12px;border-radius:999px;opacity:0;transform:scale(.8);transition:.15s;}
+  .verdict.show{opacity:1;transform:scale(1);}
+
+  .card.correct{animation:flyRight .32s ease-in forwards;}
+  .card.wrong{animation:flyLeft .32s ease-in forwards;}
+  .card.enter{animation:enter .28s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes enter{from{opacity:0;transform:translateY(22px) scale(.96);}to{opacity:1;transform:none;}}
+  @keyframes flyRight{to{opacity:0;transform:translateX(120%) rotate(12deg);}}
+  @keyframes flyLeft{to{opacity:0;transform:translateX(-120%) rotate(-12deg);}}
+
+  .flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:2;}
+  .flash.go{animation:flash .3s ease-out;}
+  @keyframes flash{0%{opacity:.35;}100%{opacity:0;}}
+
+  /* ---------- CONTROLS ---------- */
+  .controls{display:flex;gap:12px;padding:14px 18px calc(18px + env(safe-area-inset-bottom));}
+  .btn{flex:1;border:none;border-radius:999px;padding:18px 10px;font-weight:900;font-size:15px;
+    text-transform:uppercase;letter-spacing:.03em;cursor:pointer;transition:transform .08s;display:flex;
+    align-items:center;justify-content:center;gap:8px;}
+  .btn:active{transform:scale(.95);}
+  .btn.danger{background:rgba(255,59,59,.15);color:var(--danger);border:2px solid rgba(255,59,59,.5);}
+  .btn.safe{background:rgba(196,248,42,.15);color:var(--safe);border:2px solid rgba(196,248,42,.5);}
+  .hint{text-align:center;font-size:11px;color:var(--muted);padding:0 18px 8px;}
+
+  /* ---------- OVERLAY SCREENS ---------- */
+  .screen{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px;gap:16px;background:var(--ink);}
+  .screen.hidden{display:none;}
+  .biglogo{width:88px;height:88px;border-radius:26px;background:var(--lime);display:grid;place-items:center;
+    color:var(--ink);font-weight:900;font-size:52px;box-shadow:0 0 30px rgba(196,248,42,.4);}
+  .screen h1{margin:0;font-size:40px;}
+  .screen h1 .lime{color:var(--lime);}
+  .screen p{margin:0;color:var(--muted);max-width:270px;font-size:14px;font-weight:600;line-height:1.5;}
+  .cta{background:var(--lime);color:var(--ink);border:none;border-radius:999px;padding:16px 42px;
+    font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;
+    box-shadow:0 0 24px rgba(196,248,42,.35);transition:transform .08s;}
+  .cta:active{transform:scale(.96);}
+  .scoreRow{display:flex;gap:14px;margin-top:4px;}
+  .scoreBox{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:14px 22px;min-width:110px;}
+  .scoreBox .l{font-size:10px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;font-weight:700;}
+  .scoreBox .v{font-size:30px;font-weight:900;color:var(--lime);margin-top:4px;}
+  .rules{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px;}
+  .rule{display:flex;align-items:center;gap:10px;font-size:13px;color:#cfcfcf;font-weight:600;}
+  .rule .k{font-size:16px;}
+  .foot{position:absolute;bottom:18px;font-size:11px;color:var(--muted);}
+  @media (max-height:640px){
+    .card .clause{font-size:18px;min-height:92px;}
+    .screen h1{font-size:34px;}
+    .biglogo{width:72px;height:72px;font-size:42px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="brand"><span class="logo">P</span>PRAVDA</div>
+    <div class="lives" id="lives"></div>
+    <div class="stat"><span class="l">Счёт</span><span class="v" id="score">0</span></div>
+  </div>
+  <div class="combo" id="combo"></div>
+
+  <!-- STAGE -->
+  <div class="stage" id="stage">
+    <div class="flash" id="flash"></div>
+    <!-- card injected here -->
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="hint" id="hint">Свайп ← Опасно · Безопасно → · или кнопки</div>
+  <div class="controls">
+    <button class="btn danger" id="btnDanger">🟥 Опасно</button>
+    <button class="btn safe" id="btnSafe">🟩 Ок</button>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="biglogo">P</div>
+    <h1 class="display">ОХОТНИК ЗА<br><span class="lime">ЛОВУШКАМИ</span></h1>
+    <p>По одному вылетают пункты договора. Успей решить — ловушка это или нет.</p>
+    <div class="rules">
+      <div class="rule"><span class="k">🟥</span> Опасный пункт — отклоняй</div>
+      <div class="rule"><span class="k">🟩</span> Честный пункт — принимай</div>
+      <div class="rule"><span class="k">⚡</span> Комбо x2, x3… за серию без ошибок</div>
+      <div class="rule"><span class="k">❤️</span> 3 жизни — не ошибайся и не тяни</div>
+    </div>
+    <button class="cta" id="startBtn">Начать</button>
+    <div class="foot">Твой юрист в кармане</div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="screen hidden" id="overScreen">
+    <div class="biglogo" id="overFace">⚖️</div>
+    <h1 class="display" id="overTitle">ДЕЛО<br><span class="lime">ЗАКРЫТО</span></h1>
+    <p id="overMsg">Договор дочитан.</p>
+    <div class="scoreRow">
+      <div class="scoreBox"><div class="l">Счёт</div><div class="v" id="finalScore">0</div></div>
+      <div class="scoreBox"><div class="l">Рекорд</div><div class="v" id="bestScore">0</div></div>
+    </div>
+    <button class="cta" id="againBtn">Ещё раз</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Telegram (safe, no-ops outside Telegram) ----
+  var TG = null;
+  try {
+    TG = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (TG) {
+      TG.ready();
+      TG.expand();
+      try { TG.setHeaderColor('#0D0D0D'); } catch(e){}
+      try { TG.setBackgroundColor('#0D0D0D'); } catch(e){}
+    }
+  } catch(e){ TG = null; }
+
+  function haptic(type){
+    try {
+      if(!TG || !TG.HapticFeedback) return;
+      if(type==='ok') TG.HapticFeedback.notificationOccurred('success');
+      else if(type==='err') TG.HapticFeedback.notificationOccurred('error');
+      else TG.HapticFeedback.impactOccurred('light');
+    } catch(e){}
+  }
+
+  // ---- Clause deck (mock legal clauses) ----
+  // danger:true  -> a trap, player must tap ОПАСНО
+  // danger:false -> fair clause, player must tap ОК
+  var DECK = [
+    {t:"Арендодатель вправе повышать плату в любой момент без ограничений и уведомления.", d:true},
+    {t:"Стороны несут ответственность в соответствии с действующим законодательством РФ.", d:false},
+    {t:"Депозит удерживается полностью при любом досрочном расторжении договора.", d:true},
+    {t:"Оплата производится ежемесячно до 10 числа по указанным реквизитам.", d:false},
+    {t:"Исполнитель не несёт ответственности за любой причинённый ущерб, даже умышленный.", d:true},
+    {t:"Договор составлен в двух экземплярах, имеющих равную юридическую силу.", d:false},
+    {t:"Заказчик обязан оплатить неустойку 5% в день за каждый день просрочки.", d:true},
+    {t:"Все споры разрешаются путём переговоров, а при недостижении — в суде по закону.", d:false},
+    {t:"Компания может в одностороннем порядке менять условия без согласия клиента.", d:true},
+    {t:"Срок действия договора — один год с автоматической пролонгацией по согласию сторон.", d:false},
+    {t:"Персональные данные передаются третьим лицам без ограничений и вашего согласия.", d:true},
+    {t:"Гарантийный срок на услугу составляет 12 месяцев с момента подписания акта.", d:false},
+    {t:"Клиент отказывается от права на возврат средств при любых обстоятельствах.", d:true},
+    {t:"Изменения к договору оформляются письменным дополнительным соглашением.", d:false},
+    {t:"Подписывая договор, вы соглашаетесь со всеми будущими редакциями заранее.", d:true},
+    {t:"Работы принимаются по акту сдачи-приёмки в течение 5 рабочих дней.", d:false},
+    {t:"Штраф за расторжение — 100% стоимости договора независимо от причины.", d:true},
+    {t:"Конфиденциальная информация не подлежит разглашению третьим лицам.", d:false},
+    {t:"Исполнитель вправе привлекать субподрядчиков без уведомления и без ответственности за них.", d:true},
+    {t:"Цена договора является фиксированной и не подлежит изменению в течение срока.", d:false}
+  ];
+
+  // ---- State ----
+  var S = {};
+  function reset(){
+    S.score=0; S.lives=3; S.combo=0; S.round=0;
+    S.order=shuffle(DECK.map(function(_,i){return i;}));
+    S.ptr=0; S.timeLeft=0; S.timer=null; S.locked=false; S.current=null; S.playing=true;
+  }
+
+  function shuffle(a){
+    for(var i=a.length-1;i>0;i--){var j=(Math.random()*(i+1))|0;var t=a[i];a[i]=a[j];a[j]=t;}
+    return a;
+  }
+
+  // ---- DOM refs ----
+  var stage=document.getElementById('stage');
+  var flash=document.getElementById('flash');
+  var elScore=document.getElementById('score');
+  var elLives=document.getElementById('lives');
+  var elCombo=document.getElementById('combo');
+  var startScreen=document.getElementById('startScreen');
+  var overScreen=document.getElementById('overScreen');
+
+  function renderHUD(){
+    elScore.textContent=S.score;
+    var h='';
+    for(var i=0;i<3;i++) h+='<span class="'+(i<S.lives?'':'dead')+'">❤️</span>';
+    elLives.innerHTML=h;
+  }
+  function showCombo(){
+    if(S.combo>=2){ elCombo.textContent='Комбо ×'+S.combo; elCombo.classList.add('show'); }
+    else elCombo.classList.remove('show');
+  }
+
+  // time per card shrinks as you progress (5.0s -> down to 2.2s)
+  function cardTime(){ return Math.max(2.2, 5.0 - S.round*0.12); }
+
+  function nextCard(){
+    if(!S.playing) return;
+    if(S.ptr>=S.order.length){ S.order=shuffle(S.order); S.ptr=0; }
+    var idx=S.order[S.ptr++]; S.round++;
+    var data=DECK[idx];
+    S.current=data; S.locked=false;
+
+    var card=document.createElement('div');
+    card.className='card enter'; card.id='card';
+    card.innerHTML=''
+      + '<span class="rail"></span>'
+      + '<div class="tag">Пункт '+S.round+' · оцени риск</div>'
+      + '<div class="clause">'+escapeHtml(data.t)+'</div>'
+      + '<div class="timerbar"><span id="tbar"></span></div>'
+      + '<div class="verdict" id="verdict"></div>';
+    // clear previous card(s)
+    var old=document.getElementById('card'); if(old) old.remove();
+    stage.appendChild(card);
+    attachSwipe(card);
+
+    // timer
+    S.timeLeft=cardTime();
+    var total=S.timeLeft;
+    var bar=document.getElementById('tbar');
+    if(S.timer) clearInterval(S.timer);
+    var tick=50;
+    S.timer=setInterval(function(){
+      S.timeLeft-=tick/1000;
+      var frac=Math.max(0,S.timeLeft/total);
+      bar.style.transform='scaleX('+frac+')';
+      bar.style.background = frac<0.3 ? 'var(--danger)' : (frac<0.6?'var(--warn)':'var(--lime)');
+      if(S.timeLeft<=0){ clearInterval(S.timer); timeout(); }
+    },tick);
+  }
+
+  function escapeHtml(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function answer(sayDanger){
+    if(S.locked || !S.playing || !S.current) return;
+    S.locked=true;
+    if(S.timer) clearInterval(S.timer);
+    var correct = (sayDanger === S.current.d);
+    var card=document.getElementById('card');
+    var verdict=document.getElementById('verdict');
+
+    if(correct){
+      S.combo++;
+      var gain=10*Math.max(1,S.combo);
+      S.score+=gain;
+      if(verdict){verdict.textContent='+'+gain; verdict.style.background='rgba(196,248,42,.18)'; verdict.style.color='var(--safe)'; verdict.classList.add('show');}
+      if(card){card.querySelector('.rail').style.background='var(--safe)'; card.classList.add('correct');}
+      doFlash('var(--safe)');
+      haptic('ok');
+    } else {
+      S.combo=0;
+      S.lives--;
+      if(verdict){verdict.textContent = S.current.d ? 'Это ловушка!' : 'Пункт честный'; verdict.style.background='rgba(255,59,59,.18)'; verdict.style.color='var(--danger)'; verdict.classList.add('show');}
+      if(card){card.querySelector('.rail').style.background='var(--danger)'; card.classList.add('wrong');}
+      doFlash('var(--danger)');
+      haptic('err');
+    }
+    renderHUD(); showCombo();
+
+    setTimeout(function(){
+      if(S.lives<=0){ gameOver(); }
+      else { nextCard(); }
+    }, 340);
+  }
+
+  function timeout(){
+    if(S.locked||!S.playing) return;
+    S.locked=true; S.combo=0; S.lives--;
+    var card=document.getElementById('card');
+    var verdict=document.getElementById('verdict');
+    if(verdict){verdict.textContent='Время!'; verdict.style.background='rgba(255,59,59,.18)'; verdict.style.color='var(--danger)'; verdict.classList.add('show');}
+    if(card){card.querySelector('.rail').style.background='var(--danger)'; card.classList.add('wrong');}
+    doFlash('var(--danger)'); haptic('err');
+    renderHUD(); showCombo();
+    setTimeout(function(){ if(S.lives<=0) gameOver(); else nextCard(); },340);
+  }
+
+  function doFlash(color){
+    flash.style.background='radial-gradient(circle at center, '+color+' 0%, transparent 70%)';
+    flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+  }
+
+  // ---- swipe handling ----
+  function attachSwipe(card){
+    var sx=0, sy=0, dragging=false;
+    card.addEventListener('touchstart', function(e){var t=e.touches[0]; sx=t.clientX; sy=t.clientY; dragging=true;},{passive:true});
+    card.addEventListener('touchmove', function(e){
+      if(!dragging) return; var t=e.touches[0]; var dx=t.clientX-sx; var dy=t.clientY-sy;
+      if(Math.abs(dx)>Math.abs(dy)){ card.style.transform='translateX('+dx+'px) rotate('+(dx*0.04)+'deg)'; card.style.opacity=String(1-Math.min(Math.abs(dx)/400,0.5)); }
+    },{passive:true});
+    card.addEventListener('touchend', function(e){
+      if(!dragging) return; dragging=false;
+      var dx=(e.changedTouches[0].clientX)-sx;
+      card.style.transform=''; card.style.opacity='';
+      if(dx<-70) answer(true);        // swipe left = ОПАСНО
+      else if(dx>70) answer(false);   // swipe right = ОК
+    });
+  }
+
+  // ---- screens ----
+  function startGame(){
+    reset(); renderHUD(); showCombo();
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    nextCard();
+  }
+
+  function gameOver(){
+    S.playing=false;
+    if(S.timer) clearInterval(S.timer);
+    var old=document.getElementById('card'); if(old) old.remove();
+    var best=0; try{ best=parseInt(localStorage.getItem('pravda_best')||'0',10)||0; }catch(e){}
+    var isRecord = S.score>best;
+    if(isRecord){ best=S.score; try{ localStorage.setItem('pravda_best',String(best)); }catch(e){} }
+    document.getElementById('finalScore').textContent=S.score;
+    document.getElementById('bestScore').textContent=best;
+    document.getElementById('overFace').textContent = isRecord ? '🏆' : '⚖️';
+    document.getElementById('overTitle').innerHTML = isRecord ? 'НОВЫЙ<br><span class="lime">РЕКОРД</span>' : 'ДЕЛО<br><span class="lime">ЗАКРЫТО</span>';
+    document.getElementById('overMsg').textContent = isRecord ? 'Ни одна ловушка не проскочила!' : rankMsg(S.score);
+    overScreen.classList.remove('hidden');
+    haptic(isRecord?'ok':'err');
+  }
+
+  function rankMsg(sc){
+    if(sc>=300) return 'Уровень: старший партнёр. Договоры тебя боятся.';
+    if(sc>=150) return 'Крепкий юрист. Ловушки почти не проходят.';
+    if(sc>=60)  return 'Неплохо! Но пара пунктов тебя обманула.';
+    return 'Стажёр. Читай договоры внимательнее 😉';
+  }
+
+  // ---- input bindings ----
+  document.getElementById('btnDanger').addEventListener('click', function(){answer(true);});
+  document.getElementById('btnSafe').addEventListener('click', function(){answer(false);});
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('againBtn').addEventListener('click', startGame);
+  document.addEventListener('keydown', function(e){
+    if(!S.playing) { if(e.key==='Enter') startGame(); return; }
+    if(e.key==='ArrowLeft') answer(true);
+    else if(e.key==='ArrowRight') answer(false);
+  });
+
+  renderHUD();
+})();
+</script>
+</body>
+</html>
