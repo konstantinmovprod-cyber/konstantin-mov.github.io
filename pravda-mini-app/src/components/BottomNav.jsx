@@ -1,15 +1,13 @@
 /**
- * Fixed bottom navigation for the two primary tabs (Home / Premium).
- * Uses inline SVG icons to stay dependency-free.
+ * Fixed bottom navigation for the two primary tabs (Chats / Premium).
  */
 const ICONS = {
-  home: (
+  chat: (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
       <path
-        d="M3.5 10.5 12 4l8.5 6.5M5.5 9.5V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.5"
+        d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5v-9Z"
         stroke="currentColor"
         strokeWidth="1.8"
-        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -47,8 +45,8 @@ export default function BottomNav({ current, onNavigate }) {
       <div className="mx-auto flex max-w-app items-stretch px-6 pb-[max(env(safe-area-inset-bottom),8px)] pt-1">
         <Tab
           active={current === 'home'}
-          icon="home"
-          label="Главная"
+          icon="chat"
+          label="Чаты"
           onClick={() => onNavigate('home')}
         />
         <Tab

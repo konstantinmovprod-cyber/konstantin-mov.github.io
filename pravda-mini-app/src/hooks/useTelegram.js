@@ -84,19 +84,27 @@ export function useMainButton({ text, onClick, visible = true, color = '#C4F82A'
     const btn = WebApp.MainButton
     if (!btn) return
 
-    if (!visible) {
-      btn.hide()
-      return
-    }
+    try {
+      if (!visible) {
+        btn.hide()
+        return
+      }
 
-    btn.setParams({ text, color, text_color: textColor, is_active: true, is_visible: true })
+      btn.setParams({ text, color, text_color: textColor, is_active: true, is_visible: true })
 
-    const handler = () => onClick?.()
-    btn.onClick(handler)
+      const handler = () => onClick?.()
+      btn.onClick(handler)
 
-    return () => {
-      btn.offClick(handler)
-      btn.hide()
+      return () => {
+        try {
+          btn.offClick(handler)
+          btn.hide()
+        } catch (e) {
+          /* noop */
+        }
+      }
+    } catch (e) {
+      /* Older Telegram clients can throw on setParams — never crash the app. */
     }
   }, [text, onClick, visible, color, textColor])
 }
@@ -109,18 +117,26 @@ export function useBackButton(onBack, visible = true) {
     const btn = WebApp.BackButton
     if (!btn) return
 
-    if (!visible) {
-      btn.hide()
-      return
-    }
+    try {
+      if (!visible) {
+        btn.hide()
+        return
+      }
 
-    btn.show()
-    const handler = () => onBack?.()
-    btn.onClick(handler)
+      btn.show()
+      const handler = () => onBack?.()
+      btn.onClick(handler)
 
-    return () => {
-      btn.offClick(handler)
-      btn.hide()
+      return () => {
+        try {
+          btn.offClick(handler)
+          btn.hide()
+        } catch (e) {
+          /* noop */
+        }
+      }
+    } catch (e) {
+      /* noop */
     }
   }, [onBack, visible])
 }
